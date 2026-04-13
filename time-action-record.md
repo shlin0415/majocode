@@ -13,6 +13,16 @@
 | 2026-04-01 02:30 | 2026-04-01 02:45 | Write 10 Q&A with recommendations | Clarify design decisions | Created 10 key questions with A/B/C options and recommendations | Final commit |
 | 2026-04-01 02:45 | 2026-04-01 03:00 | Final git commits and cleanup | Ensure all changes are committed | 4 commits: time-action-record, compare-code-agents, how-to-build, 10-Q&A | Review with user |
 
+## 2026-04-13 Research: Agent Loop Deep Dive
+
+| Start | End | Action | Why | Brief Result | Next |
+|-------|-----|--------|-----|-------------|------|
+| 2026-04-13 00:00 | 2026-04-13 00:10 | Explore third_party/ structure | Find code agent source codes | Found 5 agents: claude-code, codex, opencode, kilocode, iflow | Read source files |
+| 2026-04-13 00:10 | 2026-04-13 00:30 | Read session processor files | Understand agent loop implementation | OpenCode/KiloCode use while(true)+Effect, Claude has circuit breaker | Web research |
+| 2026-04-13 00:30 | 2026-04-13 00:50 | Web search on agent loop architecture | Get detailed patterns for continue/error/restart | Found Claude Code #30150 (doom loop), OpenCode #17648 (infinite retry) | Write comparison |
+| 2026-04-13 00:50 | 2026-04-13 01:10 | Write compare-agent-loop.md | Document findings with source citations | Created detailed comparison with 7 sections and recommended patterns | Commit changes |
+| 2026-04-13 01:10 | 2026-04-13 01:20 | Git add and commit | Ensure safe rollback | compare-agent-loop.md committed | Review docs |
+
 ## Summary
 
 **Deliverables:**
@@ -20,15 +30,29 @@
 2. `compare-code-agents.md` — Deep comparison of Claude Code, Codex, OpenCode, KiloCode, iFlow
 3. `how-to-build-code-agent-majocode.md` — Architecture design for MajoCode
 4. `10-questions-and-answers.md` — Key design decisions with recommendations
+5. `compare-agent-loop.md` — Agent loop comparison (2026-04-13 update)
 
-**Key Findings:**
-- All code agents share the same core loop: Observe → Reason → Act → Verify
-- OpenCode's architecture (TypeScript + Bun + Tool.define() + SQLite) is the best foundation
-- Model-agnosticism is the winning strategy (avoid vendor lock-in)
-- System design decisions matter more than code execution (sglang lesson)
-- MVP should be 2-3 weeks: core loop + 6 tools + basic TUI
+**Key Findings (Agent Loop):**
+- All agents use while(true) or async generator loop pattern
+- OpenCode/KiloCode: Doom loop detection (3 consecutive same tool calls), retry with exponential backoff
+- Claude Code: Circuit breaker (3 failures), reactive compact for 413 errors
+- Codex: Rust async loop with error withholding
+- Error handling: Retryable errors get exponential backoff, non-retryable surface to user
+- Restart: Manual via --resume, no automatic crash recovery
+
+**Critical Issues Found:**
+- OpenCode #17648: Infinite retry with unbounded exponential backoff (no max retries)
+- Claude Code #30150: Model retries identical failing tool calls indefinitely
+- OpenCode #19394: 5xx errors incorrectly marked non-retryable
+
+**Recommended MajoCode Features:**
+1. Circuit breaker: Stop after N consecutive failures
+2. Doom loop detection: Detect repeated tool calls
+3. Max retries: Cap exponential backoff
+4. Token budget: Per-turn enforcement
+5. Session persistence: Save state for crash recovery
 
 **Next Steps:**
-1. Review documents with team
-2. Make final design decisions based on Q&A
-3. Start Phase 1 implementation (project scaffolding)
+1. Review compare-agent-loop.md with team
+2. Apply recommendations to MajoCode design
+3. Discuss specific Q&A on error handling strategy
