@@ -21,38 +21,44 @@
 | 2026-04-13 00:10 | 2026-04-13 00:30 | Read session processor files | Understand agent loop implementation | OpenCode/KiloCode use while(true)+Effect, Claude has circuit breaker | Web research |
 | 2026-04-13 00:30 | 2026-04-13 00:50 | Web search on agent loop architecture | Get detailed patterns for continue/error/restart | Found Claude Code #30150 (doom loop), OpenCode #17648 (infinite retry) | Write comparison |
 | 2026-04-13 00:50 | 2026-04-13 01:10 | Write compare-agent-loop.md | Document findings with source citations | Created detailed comparison with 7 sections and recommended patterns | Commit changes |
-| 2026-04-13 01:10 | 2026-04-13 01:20 | Git add and commit | Ensure safe rollback | compare-agent-loop.md committed | Review docs |
+| 2026-04-13 01:10 | 2026-04-13 01:20 | Git commit previous work | Ensure safe rollback | Committed compare-agent-loop.md and agent-loop-q-and-a.md | Start memory research |
+| 2026-04-13 01:20 | 2026-04-13 01:40 | Research memory/compaction in OpenCode | Find source code for memory system | Found SessionCompaction, overflow.ts, prune mechanism | Research other agents |
+| 2026-04-13 01:40 | 2026-04-13 02:00 | Web search on Claude Code compaction | Get detailed 3-tier system info | Found MicroCompact, Session Memory, Full Compact tiers | Web research Codex |
+| 2026-04-13 02:00 | 2026-04-13 02:20 | Research KiloCode memory system | Compare fork differences | Same as OpenCode with minor additions | Research Antigravity |
+| 2026-04-13 02:20 | 2026-04-13 02:40 | Web search Antigravity memory | Get 3-layer memory pattern | Found Episodic/Semantic/Procedural layers, Vector DB | Write comparison doc |
+| 2026-04-13 02:40 | 2026-04-13 03:00 | Write compare-memory-sys.md | Document memory system findings | Created 8-section comparison with recommendations | Commit changes |
+| 2026-04-13 03:00 | 2026-04-13 03:10 | Git commit | Ensure safe rollback | compare-memory-sys.md committed | Q&A phase |
 
 ## Summary
 
-**Deliverables:**
+**Deliverables (2026-04-13):**
 1. `time-action-record.md` — Timeline of all actions taken
 2. `compare-code-agents.md` — Deep comparison of Claude Code, Codex, OpenCode, KiloCode, iFlow
 3. `how-to-build-code-agent-majocode.md` — Architecture design for MajoCode
 4. `10-questions-and-answers.md` — Key design decisions with recommendations
 5. `compare-agent-loop.md` — Agent loop comparison (2026-04-13 update)
+6. `compare-memory-sys.md` — Memory system comparison (new)
 
-**Key Findings (Agent Loop):**
-- All agents use while(true) or async generator loop pattern
-- OpenCode/KiloCode: Doom loop detection (3 consecutive same tool calls), retry with exponential backoff
-- Claude Code: Circuit breaker (3 failures), reactive compact for 413 errors
-- Codex: Rust async loop with error withholding
-- Error handling: Retryable errors get exponential backoff, non-retryable surface to user
-- Restart: Manual via --resume, no automatic crash recovery
+**Key Findings (Memory System):**
+- OpenCode/KiloCode: 2-tier (hot tail ~40K protected, cold storage pruneable), LLM summarize
+- Claude Code: 3-tier (MicroCompact → Session Memory → Full Compact), file rehydration
+- Codex: Context manager with trim + remote compact
+- Antigravity: 3-layer (Working, Episodic/Semantic, Procedural) with Vector DB
 
-**Critical Issues Found:**
-- OpenCode #17648: Infinite retry with unbounded exponential backoff (no max retries)
-- Claude Code #30150: Model retries identical failing tool calls indefinitely
-- OpenCode #19394: 5xx errors incorrectly marked non-retryable
+**Critical Memory Issues:**
+- OpenCode: PRUNE_MINIMUM=20K, PRUNE_PROTECT=40K, prune clears tool outputs
+- Claude Code: Structured 9-section summary, continuation message after compact
+- Overflow: isOverflow check triggers compaction before hitting limit
 
 **Recommended MajoCode Features:**
-1. Circuit breaker: Stop after N consecutive failures
-2. Doom loop detection: Detect repeated tool calls
-3. Max retries: Cap exponential backoff
-4. Token budget: Per-turn enforcement
-5. Session persistence: Save state for crash recovery
+1. Token counting with Token.estimate()
+2. isOverflow detection before limit
+3. Prune old tool outputs (keep hot tail)
+4. LLM summarization with structured prompt
+5. Session persistence to SQLite
+6. File rehydration after compaction
 
 **Next Steps:**
-1. Review compare-agent-loop.md with team
-2. Apply recommendations to MajoCode design
-3. Discuss specific Q&A on error handling strategy
+1. Review compare-memory-sys.md with team
+2. Discuss memory architecture for MajoCode
+3. Start implementation planning
